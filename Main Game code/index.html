@@ -1,0 +1,91 @@
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Load sprites
+const frames = [];
+const totalFrames = 26;
+
+for (let i = 1; i <= totalFrames; i++) {
+  const img = new Image();
+  img.src = `Resources/Images/Spinning/sprite_${String(i).padStart(2, '0')}.png`;
+  frames.push(img);
+}
+
+// Sound
+const spinSound = new Audio("Resources/Music/Spinning effect.wav");
+
+// ---------------- SPIN SETTINGS ----------------
+let frameIndex = 0;
+let speed = 20;          // start FAST
+let minSpeed = 200;      // slow end
+let spinning = true;
+
+let spinDuration = 0;
+let startTime = null;
+
+let targetFrame = Math.floor(Math.random() * totalFrames);
+
+spinSound.addEventListener("loadedmetadata", () => {
+  spinDuration = spinSound.duration * 1000
+});
+
+// ---------------- ANIMATION LOOP ----------------
+function animate(timestamp) {
+
+  if (!spinDuration) {
+    requestAnimationFrame(animate);
+    return;
+  }
+
+  if (!startTime) {
+    startTime = timestamp;
+
+    spinSound.currentTime = 0;
+    spinSound.play().catch(() => {
+      console.log("Click required to start audio.");
+    });
+  }
+
+  let elapsed = timestamp - startTime;
+
+  // ---------------- SPIN LOGIC ----------------
+  if (spinning) {
+
+    let progress = elapsed / spinDuration;
+    if (progress > 1) progress = 1;
+
+    let eased = 1 - Math.pow(1 - progress, 3);
+
+    let currentSpeed = speed + (minSpeed - speed) * eased;
+
+    if (elapsed % currentSpeed < 16) {
+      frameIndex++;
+    }
+
+    frameIndex = frameIndex % totalFrames;
+
+    if (progress >= 1 || spinSound.ended) {
+      spinning = false;
+      frameIndex = targetFrame;
+    }
+  }
+
+  // ---------------- DRAW ----------------
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const img = frames[frameIndex];
+
+  if (img && img.complete) {
+    ctx.drawImage(img, 150, 150, 200, 200);
+  }
+
+  requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+  document.body.addEventListener("click", () => {
+    requestAnimationFrame(animate);
+  }, { once: true });
+};
+</script>
